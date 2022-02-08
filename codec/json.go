@@ -25,7 +25,10 @@ func NewJsonCodecFunc(conn io.ReadWriteCloser) *JsonCodec {
 
 }
 
-func (c *JsonCodec) ReadHeader(h *Header) error {
+func (c *JsonCodec) ReadReqHeader(h *ReqHeader) error {
+	return c.dec.Decode(h)
+}
+func (c *JsonCodec) ReadRspHeader(h *RspHeader) error {
 	return c.dec.Decode(h)
 }
 

@@ -1,9 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+
+	log "github.com/golang/glog"
 )
 
 func main() {
-	fmt.Println("yes")
+	flag.Parse()
+	defer log.Flush()
 }
