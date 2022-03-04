@@ -15,3 +15,11 @@ func GetServiceName() string {
 func GetAddrCacheExpiredTime() int64 {
 	return 2
 }
+
+func GetWPoolCap() int32 {
+	return 10000
+}
+
+func GetWPoolExpiredInterval() int64 {
+	return 10
+}
