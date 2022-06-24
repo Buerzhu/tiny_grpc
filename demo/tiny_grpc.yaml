@@ -1,0 +1,34 @@
+server: 
+  service:  #服务端目前只能注册一个服务
+      name: App/Service  #路由地址，格式为： 业务名/服务名
+      network: tcp   #网络监听类型， 目前只支持tcp
+      timeout: 2000  #请求最长处理时间，单位：ms
+      use_workpool: true #是否使用协程池
+      workpool:   #协程池配置
+        capacity: 100000   #协程池容量
+        expire_interval: 5000  #空闲协程回收时间间隔，单位：ms
+  
+client: 
+  service:  #客户端可以调用多个服务
+    - name: App/Service  #路由地址，格式为： 业务名/服务名
+      network: tcp   #后端服务的网络类型， tcp udp
+      timeout: 2000  #请求最长超时时间，单位：ms
+      use_connpool: true #是否使用连接池
+      serialization_type: json
+      connpool: #连接池配置
+        capacity: 20000   #连接池容量
+        expire_interval: 5000  #连接空闲回收时间间隔，单位：ms
+        timeout: 1000  #建立连接超时时间， 单位：ms
+      use_hystrix: false  #是否使用hystrix熔断
+      hystrix:  #详细参数说明 https://github.com/Netflix/Hystrix/wiki/Configuration
+        timeout: 500 #请求处理超时时间, 单位：ms
+        max_concurrent_requests: 20000 #最大并发请求数
+        request_volume_threshold: 100 #开启熔断的最小失败请求数
+        sleep_window: 5000  #熔断多久以后开始尝试是否恢复，单位：ms
+        error_percent_threshold: 50 #出错百分比阈值，当服务请求失败率达到此阈值后，熔断该服务
+
+#使用zookeeper作为服务地址注册中心，使得客户端可以通过服务名获得服务端实际的ip地址
+zookeeper: 
+  addr: 0.0.0.0:21810 #zookeeper服务端地址，格式：ip:port
+  timeout: 5000  #连接超时时间，单位：ms
+  expire: 5000 #节点地址缓存过期时间，单位：ms
