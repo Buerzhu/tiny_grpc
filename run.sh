@@ -1,1 +1,0 @@
-go run main.go -log_dir=log -alsologtostderr
