@@ -118,7 +118,7 @@ func (s *server) handle(conn *net.TCPConn, timeout time.Duration) (bool, error) 
 	opt, err := parseOption(conn)
 	if err != nil {
 		log.Errorf("handle fail because of parseOption err:%+v", err)
-		return false, errors.New("parseOption err")
+		return false, fmt.Errorf("handle fail because of parseOption err:%+v", err)
 	}
 
 	// 超时控制
@@ -135,12 +135,16 @@ func (s *server) handle(conn *net.TCPConn, timeout time.Duration) (bool, error) 
 		if ctx.Err() == nil {
 			finish <- struct{}{}
 		}
+		if err != nil {
+			log.Errorf("handle fail because of deal err:%+v\n", err)
+		}
 		return err
 	}
+
 	if s.conf.UseWorkPool {
 		workpool.SubmitTask(f)
 	} else {
-		f()
+		go f()
 	}
 
 	// 超时控制

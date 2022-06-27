@@ -101,7 +101,7 @@ func (c *client) Call(ctx context.Context, method string, req interface{}, rsp i
 	var conn net.Conn
 	// 注意，这里连接池只支持tcp
 	if c.conf.UseConnPool == true {
-		conn, err = connpool.Get(ctx, addr, c.conf.NetWork)
+		conn, err = connpool.Get(ctx, c.path, addr, c.conf.NetWork)
 		c.conn = conn
 		c.opt.KeepAlive = true // 使用连接池意味着建立长连接
 
