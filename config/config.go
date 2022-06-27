@@ -14,6 +14,7 @@ func GetServerConfig() *ServerService {
 			Capacity:       10000,
 			ExpireInterval: 5000,
 			Timeout:        1000,
+			Limit:          false,
 		},
 	}
 }
@@ -31,6 +32,7 @@ func GetClientConfig(path string) *ClientService {
 			Capacity:       10000,
 			ExpireInterval: 5000,
 			Timeout:        1000,
+			Limit:          false,
 		},
 		UseHystrix: false,
 	}

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Buerzhu/tiny_grpc/config"
 	log "github.com/golang/glog"
 	"golang.org/x/sync/singleflight"
 )
@@ -33,6 +34,7 @@ type ConnPool struct {
 	close          bool          //当前连接池是否关闭
 	lock           sync.Mutex    //互斥锁
 	address        string        //服务端地址
+	limit          bool          //是否限流
 }
 
 var (
@@ -41,11 +43,11 @@ var (
 )
 
 // Get 从连接池中获取空闲连接
-func Get(ctx context.Context, address string, network string) (net.Conn, error) {
+func Get(ctx context.Context, name string, address string, network string) (net.Conn, error) {
 	var pool *ConnPool
 	v, ok := pools.Load(address)
 	if !ok {
-		pool = initConnPool(address, network)
+		pool = initConnPool(name, address, network)
 		conn, err := pool.getFreeConn(ctx)
 		pools.Load(pool)
 		return conn, err
@@ -54,13 +56,15 @@ func Get(ctx context.Context, address string, network string) (net.Conn, error) 
 	return pool.getFreeConn(ctx)
 }
 
-// 初始化连接池
-func initConnPool(address string, network string) *ConnPool {
+// 初始化连接池,name为路由名称，addr为ip地址
+func initConnPool(name string, address string, network string) *ConnPool {
 	pool, _, _ := group.Do(address, func() (interface{}, error) {
+		conf := config.GetClientConfig(name).ConnPool
 		cPool := &ConnPool{
-			capacity:       int32(defaultCapacity),
-			expireInterval: defaultExpiredInterval,
-			dialTimeout:    defaultDialTimeout,
+			capacity:       int32(conf.Capacity),
+			expireInterval: time.Duration(conf.ExpireInterval) * time.Millisecond,
+			dialTimeout:    time.Duration(conf.Timeout) * time.Millisecond,
+			limit:          conf.Limit,
 			address:        address,
 			network:        network,
 		}
@@ -91,6 +95,11 @@ func (p *ConnPool) getFreeConn(ctx context.Context) (*PoolConn, error) {
 		waiting = true
 	}
 	p.lock.Unlock()
+
+	//若开启限流直接返回错误
+	if waiting && p.limit {
+		return nil, errors.New("conn pool is full,no free conn.")
+	}
 
 	//等待空闲连接
 	if waiting {
@@ -157,7 +166,6 @@ func (p *ConnPool) releaseConnTiming() {
 		//创建一个周期性的定时器
 		ticker := time.NewTicker(p.expireInterval)
 		for range ticker.C {
-			log.Info("start release conn...\n")
 			if p.close {
 				return
 			}

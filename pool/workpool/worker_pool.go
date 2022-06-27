@@ -26,6 +26,7 @@ type workerPool struct {
 	workerQueue    []*worker     //协程队列
 	close          bool          //当前协程池是否关闭
 	lock           sync.Mutex    //互斥锁
+	limit          bool          // 是否限流
 }
 
 type worker struct {
@@ -60,6 +61,7 @@ func initWorkerPool() *workerPool {
 		wpool = &workerPool{
 			capacity:       int32(conf.WorkPool.Capacity),
 			expireInterval: time.Duration(conf.WorkPool.ExpireInterval) * time.Millisecond,
+			limit:          conf.WorkPool.Limit,
 			sig:            make(chan sig, 1),
 		}
 		wpool.releaseWorkerTiming()
@@ -86,6 +88,11 @@ func (w *workerPool) getFreeWorker() *worker {
 		waiting = true
 	}
 	w.lock.Unlock()
+
+	// 若开启限流直接返回空指针
+	if waiting && w.limit {
+		return nil
+	}
 
 	//等待空闲协程
 	if waiting {
@@ -123,7 +130,6 @@ func (w *workerPool) releaseWorkerTiming() {
 		//创建一个周期性的定时器
 		ticker := time.NewTicker(w.expireInterval)
 		for range ticker.C {
-			log.Info("start release worker coroutine...")
 			if w.close {
 				return
 			}

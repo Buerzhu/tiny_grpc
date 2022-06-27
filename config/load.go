@@ -52,6 +52,7 @@ type PoolConf struct {
 	ExpireInterval int    `yaml:"expire_interval"`
 	Timeout        int    `yaml:"timeout"` //连接池建立连接超时时间
 	Network        string `yaml:"network"` //连接池网络类型，目前只支持tcp
+	Limit          bool   `yaml:"limit"`   //是否开启限流
 }
 
 type ClientService struct {
